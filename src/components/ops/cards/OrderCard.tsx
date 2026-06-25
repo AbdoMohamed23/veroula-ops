@@ -1,0 +1,239 @@
+import { useMemo, useState } from 'react'
+import {
+  BookOpen,
+  CheckCircle2,
+  CreditCard,
+  Edit3,
+  ShoppingBag,
+  Trash2,
+  XCircle,
+  Zap,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { getStatusBadge } from '@/lib/status'
+import { cn } from '@/lib/utils'
+import type { Order, Product } from '@/types/ops'
+import { isStoreOrder } from '@/types/ops'
+
+interface StoreOrderItem {
+  catalog_id?: string | null
+  name: string
+  quantity: number
+  line_total?: number
+  from_catalog?: boolean
+  catalog_name?: string
+}
+
+function parseStoreOrderItems(str?: string): StoreOrderItem[] {
+  try {
+    return JSON.parse(str || '[]') as StoreOrderItem[]
+  } catch {
+    return []
+  }
+}
+
+function parseCustomerMeta(str?: string | null) {
+  try {
+    return JSON.parse(str || '{}') as { alternative_phone?: string | null }
+  } catch {
+    return {}
+  }
+}
+
+export function OrderCard({
+  order,
+  products = [],
+  onEdit,
+  onDelete,
+  onComplete,
+  onCancel,
+  onDetails,
+}: {
+  order: Order
+  products?: Product[]
+  onEdit?: (order: Order) => void
+  onDelete?: (id: string) => void
+  onComplete?: (id: string) => void
+  onCancel?: (id: string) => void
+  onDetails?: (order: Order) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const isStore = isStoreOrder(order)
+  const storeItems = useMemo(() => parseStoreOrderItems(order.orderItems), [order.orderItems])
+  const customerMeta = useMemo(() => parseCustomerMeta(order.customerMeta), [order.customerMeta])
+  const hasTopBadge = order.isUrgent || isStore
+
+  return (
+    <div
+      className={cn(
+        'bg-card rounded-2xl border p-4 space-y-3 relative overflow-hidden transition-all',
+        order.isUrgent
+          ? 'border-amber-500/30 shadow-lg shadow-amber-500/5 bg-gradient-to-l from-card via-card to-amber-500/10'
+          : isStore
+            ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/5 bg-gradient-to-l from-card via-card to-emerald-500/10'
+            : 'border-primary/20 shadow-lg shadow-primary/5 bg-gradient-to-l from-card via-card to-primary/10',
+      )}
+    >
+      {order.isUrgent && (
+        <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-xl flex items-center gap-1">
+          <Zap className="size-2.5 fill-white" /> مستعجل
+        </div>
+      )}
+      {isStore && (
+        <div className="absolute top-0 right-0 bg-gradient-to-l from-emerald-600 to-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-xl flex items-center gap-1">
+          <ShoppingBag className="size-2.5" /> من المتجر
+        </div>
+      )}
+
+      <div className={cn('flex items-start justify-between', hasTopBadge ? 'pt-5' : 'pt-1')}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-foreground font-semibold text-sm truncate">{order.clientName}</h3>
+            {getStatusBadge(order.status)}
+          </div>
+          {order.executor && (
+            <p className="text-muted-foreground text-xs">المنفذ: {order.executor.name}</p>
+          )}
+          {isStore && order.externalOrderId && (
+            <p className="text-muted-foreground/60 text-[10px] font-mono mt-0.5">
+              #{order.externalOrderId.slice(-8)}
+            </p>
+          )}
+        </div>
+        <span className="text-muted-foreground text-xs whitespace-nowrap mr-2">
+          {formatDate(order.createdAt)}
+        </span>
+      </div>
+
+      {isStore && storeItems.length > 0 && (
+        <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-2.5 space-y-1.5">
+          {storeItems.map((item, i) => {
+            const linkedInCatalog =
+              item.from_catalog === true ||
+              (item.catalog_id != null && products.some((p) => p.id === item.catalog_id))
+            return (
+              <div key={i} className="flex items-center gap-1.5 text-xs">
+                <span className="text-foreground/80 truncate flex-1">
+                  {item.catalog_name ?? item.name}
+                </span>
+                <span className="text-muted-foreground shrink-0">×{item.quantity}</span>
+                {item.line_total != null && (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
+                    {formatCurrency(item.line_total)}
+                  </span>
+                )}
+                {linkedInCatalog ? (
+                  <span className="shrink-0 inline-flex items-center gap-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9px] font-semibold px-1 py-0.5 rounded-md">
+                    <BookOpen className="size-2.5" /> كتالوج
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[9px] px-1 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+                    خارجي
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div>
+          <p className="text-muted-foreground text-[10px]">الإجمالي</p>
+          <p className="text-foreground font-medium">{formatCurrency(order.totalPrice)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-[10px]">العربون</p>
+          <p className="text-amber-400 font-medium">{formatCurrency(order.deposit)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-[10px]">صافي الربح</p>
+          <p className="text-green-400 font-medium">{formatCurrency(order.netProfit)}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="text-primary text-xs w-full text-center hover:underline"
+      >
+        {expanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+      </button>
+
+      {expanded && (
+        <div className="space-y-2 text-xs border-t border-border/50 pt-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">الهاتف</span>
+            <span dir="ltr">{order.clientPhone}</span>
+          </div>
+          {customerMeta.alternative_phone && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">هاتف بديل</span>
+              <span dir="ltr">{customerMeta.alternative_phone}</span>
+            </div>
+          )}
+          {order.address && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">العنوان</span>
+              <span className="text-left">{order.address}</span>
+            </div>
+          )}
+          {order.moderatorCommission > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">عمولة المودريتور</span>
+              <span className="text-purple-400">{formatCurrency(order.moderatorCommission)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2 pt-1 flex-wrap">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-muted-foreground hover:text-foreground h-8 px-2"
+          onClick={() => onEdit?.(order)}
+        >
+          <Edit3 className="size-3.5 ml-1" /> تعديل
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-primary h-8 px-2"
+          onClick={() => onDetails?.(order)}
+        >
+          <CreditCard className="size-3.5 ml-1" /> البطاقات
+        </Button>
+        {order.status === 'pending' && (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-green-400 h-8 px-2"
+              onClick={() => onComplete?.(order.id)}
+            >
+              <CheckCircle2 className="size-3.5 ml-1" /> إكمال
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-400 h-8 px-2"
+              onClick={() => onCancel?.(order.id)}
+            >
+              <XCircle className="size-3.5 ml-1" /> إلغاء
+            </Button>
+          </>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-red-400 h-8 px-2 mr-auto"
+          onClick={() => onDelete?.(order.id)}
+        >
+          <Trash2 className="size-3.5 ml-1" /> حذف
+        </Button>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,198 @@
+import { mapOrder } from '@/lib/db-mapper'
+import { logActivity } from '@/lib/services/activity'
+import { supabase } from '@/lib/supabase'
+import type { Order, OrderStatus } from '@/types/ops'
+
+const ORDER_SELECT = `
+  *,
+  executor:ops_executors(*),
+  product:ops_products(*)
+`
+
+export async function fetchOrders(status?: OrderStatus) {
+  let q = supabase
+    .from('ops_orders')
+    .select(ORDER_SELECT)
+    .order('created_at', { ascending: false })
+
+  if (status) q = q.eq('status', status)
+
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row) => mapOrder(row as Record<string, unknown>))
+}
+
+export async function updateOrderStatus(id: string, status: OrderStatus, label: string) {
+  if (status === 'cancelled') {
+    const { data: existing } = await supabase
+      .from('ops_orders')
+      .select('status, is_urgent, product_id')
+      .eq('id', id)
+      .single()
+
+    if (
+      existing?.status === 'pending' &&
+      existing.is_urgent &&
+      existing.product_id
+    ) {
+      await incrementProductStock(existing.product_id)
+    }
+  }
+
+  const { error } = await supabase.from('ops_orders').update({ status }).eq('id', id)
+  if (error) throw new Error(error.message)
+  await logActivity('order_status', label)
+}
+
+export async function deleteOrder(id: string) {
+  const { error } = await supabase.from('ops_orders').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+  await logActivity('order_deleted', 'تم حذف أوردر')
+}
+
+export type OrderMutationPayload = Partial<{
+  clientName: string
+  clientPhone: string
+  address: string
+  totalPrice: number
+  deposit: number
+  shippingCost: number
+  executorId: string | null
+  executorPrice: number
+  executorDeposit: number
+  moderatorCommission: number
+  deliveryPeriod: string
+  status: OrderStatus
+  isUrgent: boolean
+  productId: string | null
+  images: string
+}>
+
+function calcOrderFields(payload: OrderMutationPayload) {
+  const totalPrice = Number(payload.totalPrice) || 0
+  const deposit = Number(payload.deposit) || 0
+  const shippingCost = Number(payload.shippingCost) || 0
+  const executorPrice = Number(payload.executorPrice) || 0
+  const executorDeposit = Number(payload.executorDeposit) || 0
+  const moderatorCommission = Number(payload.moderatorCommission) || 0
+  const isUrgent = Boolean(payload.isUrgent)
+  const remaining = totalPrice - deposit
+  const executorRemaining = executorPrice - executorDeposit
+  const netProfit = isUrgent
+    ? totalPrice
+    : totalPrice - executorPrice - shippingCost - moderatorCommission
+
+  return {
+    total_price: totalPrice,
+    deposit,
+    remaining,
+    shipping_cost: shippingCost,
+    executor_price: executorPrice,
+    executor_deposit: executorDeposit,
+    executor_remaining: executorRemaining,
+    moderator_commission: moderatorCommission,
+    net_profit: netProfit,
+  }
+}
+
+async function decrementProductStock(productId: string) {
+  const { data: product, error: fetchErr } = await supabase
+    .from('ops_products')
+    .select('stock')
+    .eq('id', productId)
+    .single()
+
+  if (fetchErr || !product) throw new Error('المنتج غير موجود')
+  if (product.stock <= 0) throw new Error('المنتج غير متوفر في المخزون')
+
+  const { error } = await supabase
+    .from('ops_products')
+    .update({ stock: product.stock - 1 })
+    .eq('id', productId)
+
+  if (error) throw new Error(error.message)
+}
+
+async function incrementProductStock(productId: string) {
+  const { data: product, error: fetchErr } = await supabase
+    .from('ops_products')
+    .select('stock')
+    .eq('id', productId)
+    .single()
+
+  if (fetchErr || !product) return
+
+  await supabase
+    .from('ops_products')
+    .update({ stock: product.stock + 1 })
+    .eq('id', productId)
+}
+
+export async function createOrder(payload: OrderMutationPayload & Record<string, unknown>): Promise<Order> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('غير مسجل الدخول')
+
+  const isUrgent = Boolean(payload.isUrgent)
+  const productId = (payload.productId as string | null) ?? null
+
+  if (isUrgent && productId) {
+    await decrementProductStock(productId)
+  }
+
+  const calc = calcOrderFields(payload)
+  const { data, error } = await supabase
+    .from('ops_orders')
+    .insert({
+      user_id: user.id,
+      client_name: payload.clientName,
+      client_phone: payload.clientPhone ?? '',
+      address: payload.address ?? '',
+      executor_id: payload.executorId ?? null,
+      delivery_period: payload.deliveryPeriod ?? '',
+      status: (payload.status as string) ?? 'pending',
+      is_urgent: isUrgent,
+      product_id: productId,
+      images: (payload.images as string) ?? '[]',
+      ...calc,
+    })
+    .select(ORDER_SELECT)
+    .single()
+
+  if (error) {
+    if (isUrgent && productId) {
+      await incrementProductStock(productId).catch(() => {})
+    }
+    throw new Error(error.message)
+  }
+
+  const label = isUrgent ? ' (بيع كتالوج)' : ''
+  await logActivity('order_created', `تم إنشاء أوردر — ${payload.clientName}${label}`)
+  return mapOrder(data as Record<string, unknown>)
+}
+
+export async function updateOrder(id: string, payload: OrderMutationPayload & Record<string, unknown>): Promise<Order> {
+  const calc = calcOrderFields(payload)
+  const { data, error } = await supabase
+    .from('ops_orders')
+    .update({
+      ...(payload.clientName != null ? { client_name: payload.clientName } : {}),
+      ...(payload.clientPhone != null ? { client_phone: payload.clientPhone } : {}),
+      ...(payload.address != null ? { address: payload.address } : {}),
+      ...(payload.executorId !== undefined ? { executor_id: payload.executorId } : {}),
+      ...(payload.deliveryPeriod != null ? { delivery_period: payload.deliveryPeriod } : {}),
+      ...(payload.status != null ? { status: payload.status } : {}),
+      ...(payload.isUrgent != null ? { is_urgent: payload.isUrgent } : {}),
+      ...(payload.productId !== undefined ? { product_id: payload.productId } : {}),
+      ...(payload.images != null ? { images: payload.images as string } : {}),
+      ...calc,
+    })
+    .eq('id', id)
+    .select(ORDER_SELECT)
+    .single()
+
+  if (error) throw new Error(error.message)
+  await logActivity('order_updated', `تم تعديل أوردر — ${payload.clientName ?? ''}`)
+  return mapOrder(data as Record<string, unknown>)
+}
