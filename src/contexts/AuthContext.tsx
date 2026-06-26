@@ -34,11 +34,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s)
-      if (s?.user) void loadProfile(s.user.id)
-      setLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: s } }) => {
+        setSession(s)
+        if (s?.user) void loadProfile(s.user.id)
+      })
+      .catch(() => {
+        setSession(null)
+        setProfile(null)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
 
     const {
       data: { subscription },
@@ -46,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s)
       if (s?.user) void loadProfile(s.user.id)
       else setProfile(null)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()

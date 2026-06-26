@@ -1,6 +1,6 @@
 # OPS — نظام إدارة الأوردرات
 
-واجهة PWA منفصلة (Vite + React).
+واجهة PWA منفصلة (Vite + React) على Supabase.
 
 ## التشغيل محلياً
 
@@ -19,12 +19,13 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ## PWA
 
 - اسم التطبيق: **OPS**
-- أيقونة: **$** (أسود)
-- تثبيت من المتصفح على الموبايل
+- أيقونة: **$** أبيض على خلفية **#000**
+- PNG لدعم iOS/Android (`npm run icons`)
 
-## Edge Function (webhook المتجر)
+## النطاق
 
-راجع `supabase/functions/incoming-order/README.md`
+- **لا إشعارات Web Push** — غير مدعومة في هذا النظام.
+- **لا webhook أوردرات** — الربط المستقبلي مع أنظمة أخرى للكتالوج فقط (تصدير/مزامنة المنتجات).
 
 ## النشر
 

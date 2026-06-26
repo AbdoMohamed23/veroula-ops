@@ -16,13 +16,23 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              <Route element={<GuestRoute />}>
-                <Route path="/login" element={<LoginPage />} />
-              </Route>
-              <Route element={<ProtectedRoute />}>
-                <Route path="/" element={<OpsShell />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <LoginPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <OpsShell />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
           <Toaster position="top-center" richColors dir="rtl" />
