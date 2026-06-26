@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Building2, Download, Loader2, Truck, User, Zap } from 'lucide-react'
+import { Building2, Download, Edit3, Loader2, Truck, User, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -86,11 +86,19 @@ export function OrderTicketsModal({
   const [clientToggles, setClientToggles] = useState(defaultToggles)
   const [executorToggleState, setExecutorToggleState] = useState(executorToggles)
   const [opsToggleState, setOpsToggleState] = useState(opsToggles)
+  const [showFieldToggles, setShowFieldToggles] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (open) setActiveTicket('client')
+    if (open) {
+      setActiveTicket('client')
+      setShowFieldToggles(false)
+    }
   }, [open, order?.id])
+
+  useEffect(() => {
+    setShowFieldToggles(false)
+  }, [activeTicket])
 
   if (!order) return null
 
@@ -109,7 +117,7 @@ export function OrderTicketsModal({
         : setOpsToggleState
 
   const parsedImages = parseImages(order.images)
-  const grandTotal = order.totalPrice + order.shippingCost
+  const remainingPlusShipping = order.remaining + order.shippingCost
 
   const tabs: { id: TicketTab; label: string; icon: typeof User }[] = [
     { id: 'client', label: 'بطاقة العميل', icon: User },
@@ -176,7 +184,7 @@ export function OrderTicketsModal({
     { key: 'executorRemaining', label: 'متبقي المنفذ' },
     { key: 'moderatorCommission', label: 'المودريتور' },
     { key: 'shippingCost', label: 'الشحن' },
-    { key: 'grandTotal', label: 'الإجمالي + شحن' },
+    { key: 'grandTotal', label: 'المتبقي + شحن' },
     { key: 'netProfit', label: 'صافي الربح' },
   ]
 
@@ -209,22 +217,37 @@ export function OrderTicketsModal({
           })}
         </div>
 
-        <div className="grid grid-cols-2 gap-1 max-h-28 overflow-y-auto bg-card rounded-xl p-2 border border-border">
-          {toggleLabels.map(({ key, label }) => (
-            <label
-              key={key}
-              className="flex items-center gap-1.5 text-[10px] cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={toggles[key]}
-                onChange={() => toggleField(key)}
-                className="accent-primary size-3"
-              />
-              {label}
-            </label>
-          ))}
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs shrink-0"
+            onClick={() => setShowFieldToggles((v) => !v)}
+          >
+            <Edit3 className="size-3.5 ml-1" />
+            {showFieldToggles ? 'إخفاء الحقول' : 'تعديل الحقول'}
+          </Button>
         </div>
+
+        {showFieldToggles && (
+          <div className="grid grid-cols-2 gap-1 max-h-36 overflow-y-auto bg-card rounded-xl p-2 border border-border">
+            {toggleLabels.map(({ key, label }) => (
+              <label
+                key={key}
+                className="flex items-center gap-1.5 text-[10px] cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={toggles[key]}
+                  onChange={() => toggleField(key)}
+                  className="accent-primary size-3"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        )}
 
         <div
           ref={cardRef}
@@ -293,8 +316,8 @@ export function OrderTicketsModal({
             )}
             {toggles.grandTotal && (
               <Row
-                label="الإجمالي + شحن"
-                value={formatCurrency(grandTotal)}
+                label="المتبقي + شحن"
+                value={formatCurrency(remainingPlusShipping)}
                 valueClass="!text-gray-900 !font-bold"
               />
             )}
