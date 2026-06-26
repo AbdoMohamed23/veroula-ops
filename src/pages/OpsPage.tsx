@@ -15,6 +15,7 @@ import { OpsFab } from '@/components/ops/OpsFab'
 import { OpsBrand } from '@/components/ops/OpsLogo'
 import { CapitalBreakdownModal } from '@/components/ops/modals/CapitalBreakdownModal'
 import { CapitalModal } from '@/components/ops/modals/CapitalModal'
+import { ConfirmDeleteModal } from '@/components/ops/modals/ConfirmDeleteModal'
 import { ExecutorModal } from '@/components/ops/modals/ExecutorModal'
 import { ExpenseModal } from '@/components/ops/modals/ExpenseModal'
 import { ImageLightbox } from '@/components/ops/modals/ImageLightbox'
@@ -105,6 +106,11 @@ export function OpsShell() {
     open: false,
     src: null,
   })
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    title: string
+    description: string
+    onConfirm: () => void
+  } | null>(null)
 
   const { data: orders = [], isLoading: ordersLoading } = useOrders()
   const { data: executors = [], isLoading: executorsLoading } = useExecutors()
@@ -122,6 +128,17 @@ export function OpsShell() {
   const expenseMutations = useExpenseMutations()
   const capitalMutation = useCapitalMutation()
   const moderatorPayMutation = useModeratorPaymentMutation()
+
+  const askDelete = useCallback((title: string, description: string, action: () => void) => {
+    setDeleteConfirm({ title, description, onConfirm: action })
+  }, [])
+
+  const deleteLoading =
+    orderMutations.remove.isPending ||
+    supplyMutations.remove.isPending ||
+    productMutations.remove.isPending ||
+    executorMutations.remove.isPending ||
+    expenseMutations.remove.isPending
 
   const setActiveTab = useCallback((tab: TabId) => {
     setActiveTabState(tab)
@@ -184,7 +201,11 @@ export function OpsShell() {
                 onEditCapital={() => setCapitalModal(true)}
                 onAddExpense={() => setExpenseModal({ open: true, expense: null })}
                 onEditExpense={(exp) => setExpenseModal({ open: true, expense: exp })}
-                onDeleteExpense={(id) => expenseMutations.remove.mutate(id)}
+                onDeleteExpense={(id) =>
+                  askDelete('حذف المصروف', 'هل تريد حذف هذا المصروف؟', () =>
+                    expenseMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
                 onCapitalBreakdown={() => setCapitalBreakdownModal(true)}
                 onMonthlyHistory={() => setMonthlyHistoryModal(true)}
               />
@@ -199,7 +220,11 @@ export function OpsShell() {
                 products={products}
                 onComplete={(id) => orderMutations.complete.mutate(id)}
                 onCancel={(id) => orderMutations.cancel.mutate(id)}
-                onDelete={(id) => orderMutations.remove.mutate(id)}
+                onDelete={(id) =>
+                  askDelete('حذف الأوردر', 'هل تريد حذف هذا الأوردر نهائياً؟', () =>
+                    orderMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
                 onEdit={(order) => setOrderModal({ open: true, order })}
                 onDetails={(order) => setOrderTicketsModal({ open: true, order })}
               />
@@ -214,7 +239,11 @@ export function OpsShell() {
                 stats={stats}
                 onComplete={(id) => supplyMutations.complete.mutate(id)}
                 onCancel={(id) => supplyMutations.cancel.mutate(id)}
-                onDelete={(id) => supplyMutations.remove.mutate(id)}
+                onDelete={(id) =>
+                  askDelete('حذف المشتريات', 'هل تريد حذف طلب المشتريات هذا؟', () =>
+                    supplyMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
                 onEdit={(order) => setSupplyModal({ open: true, order })}
               />
             ))}
@@ -225,7 +254,11 @@ export function OpsShell() {
             ) : (
               <CatalogTab
                 products={products}
-                onDelete={(id) => productMutations.remove.mutate(id)}
+                onDelete={(id) =>
+                  askDelete('حذف المنتج', 'هل تريد حذف هذا المنتج من الكتالوج؟', () =>
+                    productMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
                 onEdit={(product) => setProductModal({ open: true, product })}
                 onSell={(product) => setUrgentModal({ open: true, product })}
               />
@@ -238,7 +271,11 @@ export function OpsShell() {
               <TeamTab
                 executors={executors}
                 orders={orders}
-                onDelete={(id) => executorMutations.remove.mutate(id)}
+                onDelete={(id) =>
+                  askDelete('حذف المنفذ', 'هل تريد حذف هذا المنفذ؟', () =>
+                    executorMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
                 onEdit={(executor) => setExecutorModal({ open: true, executor })}
               />
             ))}
@@ -400,6 +437,15 @@ export function OpsShell() {
         open={lightbox.open}
         src={lightbox.src}
         onClose={() => setLightbox({ open: false, src: null })}
+      />
+
+      <ConfirmDeleteModal
+        open={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => deleteConfirm?.onConfirm()}
+        title={deleteConfirm?.title}
+        description={deleteConfirm?.description}
+        loading={deleteLoading}
       />
 
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">

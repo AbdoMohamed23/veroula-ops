@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { getStatusBadge } from '@/lib/status'
+import { getStatusBadgeForTicket } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import type { Order } from '@/types/ops'
 
@@ -148,7 +148,7 @@ export function OrderTicketsModal({
   function Row({
     label,
     value,
-    valueClass = 'text-foreground',
+    valueClass = '',
   }: {
     label: string
     value: string
@@ -156,8 +156,8 @@ export function OrderTicketsModal({
   }) {
     return (
       <div className="flex justify-between items-start text-xs gap-2">
-        <span className="shrink-0 font-medium text-muted-foreground">{label}</span>
-        <span className={cn('text-right', valueClass)}>{value}</span>
+        <span className="shrink-0 font-medium text-gray-600">{label}</span>
+        <span className={cn('text-right font-semibold text-gray-900', valueClass)}>{value}</span>
       </div>
     )
   }
@@ -228,12 +228,13 @@ export function OrderTicketsModal({
 
         <div
           ref={cardRef}
-          className="bg-[#faf8f0] text-gray-900 rounded-2xl p-4 space-y-2 border border-gray-200"
+          className="bg-[#faf8f0] text-gray-900 rounded-2xl p-4 space-y-2 border border-gray-200 [&_*]:!text-inherit"
+          style={{ color: '#111827' }}
         >
-          <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-300">
             <span className="text-[10px] text-gray-500">{formatDate(order.createdAt)}</span>
             <div className="flex items-center gap-2">
-              {getStatusBadge(order.status)}
+              {getStatusBadgeForTicket(order.status)}
               {order.isUrgent && (
                 <span className="text-amber-600 text-[10px] flex items-center gap-0.5">
                   <Zap className="size-3" /> مستعجل
@@ -291,7 +292,11 @@ export function OrderTicketsModal({
               <Row label="الشحن" value={formatCurrency(order.shippingCost)} />
             )}
             {toggles.grandTotal && (
-              <Row label="الإجمالي + شحن" value={formatCurrency(grandTotal)} valueClass="font-bold" />
+              <Row
+                label="الإجمالي + شحن"
+                value={formatCurrency(grandTotal)}
+                valueClass="!text-gray-900 !font-bold"
+              />
             )}
             {toggles.netProfit && (
               <Row

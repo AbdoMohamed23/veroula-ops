@@ -133,8 +133,11 @@ export function useOrderMutations() {
     update: useMutation({
       mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateOrder>[1] }) =>
         updateOrder(id, payload),
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         invalidate()
+        if (variables.payload.status) {
+          void queryClient.invalidateQueries({ queryKey: opsKeys.products })
+        }
         toast.success('تم تحديث الأوردر')
       },
       onError: (e: Error) => toast.error(e.message),

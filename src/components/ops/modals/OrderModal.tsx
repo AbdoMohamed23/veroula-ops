@@ -196,6 +196,20 @@ export function OrderModal({
             <Label className="text-xs">عمولة المودريتور</Label>
             <Input type="number" value={form.moderatorCommission} onChange={(e) => setForm({ ...form, moderatorCommission: e.target.value })} dir="ltr" className="bg-card h-10" />
           </div>
+          {isEdit && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">الحالة</Label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as OrderStatus })}
+                className="w-full h-10 rounded-md border border-border bg-card px-3 text-sm"
+              >
+                <option value="pending">معلق</option>
+                <option value="completed">مكتمل</option>
+                <option value="cancelled">ملغي</option>
+              </select>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>إلغاء</Button>
             <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground">

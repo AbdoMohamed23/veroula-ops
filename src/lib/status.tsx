@@ -23,3 +23,27 @@ export function getStatusBadge(status: OrderStatus) {
       )
   }
 }
+
+/** للبطاقة المُصدَّرة — ألوان داكنة على خلفية فاتحة */
+export function getStatusBadgeForTicket(status: OrderStatus) {
+  switch (status) {
+    case 'pending':
+      return (
+        <span className="text-amber-700 text-[10px] font-semibold flex items-center gap-1">
+          <Clock className="size-3" /> معلق
+        </span>
+      )
+    case 'completed':
+      return (
+        <span className="text-green-700 text-[10px] font-semibold flex items-center gap-1">
+          <CheckCircle2 className="size-3" /> مكتمل
+        </span>
+      )
+    case 'cancelled':
+      return (
+        <span className="text-red-700 text-[10px] font-semibold flex items-center gap-1">
+          <XCircle className="size-3" /> ملغي
+        </span>
+      )
+  }
+}

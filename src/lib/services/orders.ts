@@ -128,6 +128,75 @@ async function incrementProductStock(productId: string) {
     .eq('id', productId)
 }
 
+async function adjustStoreOrderStock(orderItemsJson: string, direction: 'restore' | 'deduct') {
+  let items: { catalog_id?: string | null; quantity?: number; from_catalog?: boolean }[] = []
+  try {
+    items = JSON.parse(orderItemsJson || '[]')
+  } catch {
+    return
+  }
+
+  for (const item of items) {
+    if (!item.catalog_id || item.from_catalog === false) continue
+    const qty = Number(item.quantity) || 1
+    const { data: product } = await supabase
+      .from('ops_products')
+      .select('stock')
+      .eq('id', item.catalog_id)
+      .single()
+    if (!product) continue
+
+    if (direction === 'restore') {
+      await supabase
+        .from('ops_products')
+        .update({ stock: product.stock + qty })
+        .eq('id', item.catalog_id)
+    } else {
+      if (product.stock < qty) {
+        throw new Error(`المخزون غير كافٍ للمنتج (المتاح: ${product.stock})`)
+      }
+      await supabase
+        .from('ops_products')
+        .update({ stock: product.stock - qty })
+        .eq('id', item.catalog_id)
+    }
+  }
+}
+
+async function applyStatusStockChange(
+  existing: {
+    status: string
+    is_urgent: boolean
+    product_id: string | null
+    source: string
+    order_items: string
+  },
+  newStatus: OrderStatus,
+) {
+  if (existing.status === newStatus) return
+
+  const wasPending = existing.status === 'pending'
+  const wasCancelled = existing.status === 'cancelled'
+
+  if (wasPending && newStatus === 'cancelled') {
+    if (existing.is_urgent && existing.product_id) {
+      await incrementProductStock(existing.product_id)
+    }
+    if (existing.source === 'veroula_store') {
+      await adjustStoreOrderStock(existing.order_items, 'restore')
+    }
+  }
+
+  if (wasCancelled && newStatus === 'pending') {
+    if (existing.is_urgent && existing.product_id) {
+      await decrementProductStock(existing.product_id)
+    }
+    if (existing.source === 'veroula_store') {
+      await adjustStoreOrderStock(existing.order_items, 'deduct')
+    }
+  }
+}
+
 export async function createOrder(payload: OrderMutationPayload & Record<string, unknown>): Promise<Order> {
   const {
     data: { user },
@@ -173,6 +242,16 @@ export async function createOrder(payload: OrderMutationPayload & Record<string,
 }
 
 export async function updateOrder(id: string, payload: OrderMutationPayload & Record<string, unknown>): Promise<Order> {
+  const { data: existing } = await supabase
+    .from('ops_orders')
+    .select('status, is_urgent, product_id, source, order_items')
+    .eq('id', id)
+    .single()
+
+  if (payload.status && existing) {
+    await applyStatusStockChange(existing, payload.status as OrderStatus)
+  }
+
   const calc = calcOrderFields(payload)
   const { data, error } = await supabase
     .from('ops_orders')
