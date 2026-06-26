@@ -9,11 +9,13 @@ export function ExecutorCard({
   orders,
   onEdit,
   onDelete,
+  onViewOrders,
 }: {
   executor: Executor
   orders: Order[]
   onEdit?: (executor: Executor) => void
   onDelete?: (id: string) => void
+  onViewOrders?: (executor: Executor) => void
 }) {
   const activeOrders = orders.filter(
     (o) => o.executorId === executor.id && o.status === 'pending',
@@ -31,8 +33,12 @@ export function ExecutorCard({
             <p className="text-muted-foreground text-xs mt-0.5">{executor.address}</p>
           )}
         </div>
-        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">
-          {activeOrders.length} أوردر
+        <Badge
+          className="bg-primary/15 text-primary border-primary/30 text-[10px] cursor-pointer hover:bg-primary/30 transition-colors"
+          onClick={() => onViewOrders?.(executor)}
+        >
+          {activeOrders.length}{' '}
+          {activeOrders.length === 1 ? 'أوردر' : 'أوردرات'}
         </Badge>
       </div>
 

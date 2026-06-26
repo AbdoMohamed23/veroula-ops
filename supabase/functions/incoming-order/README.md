@@ -27,7 +27,7 @@ x-order-api-key: YOUR_KEY
 
 ## ربط المتجر (veroula.shop)
 
-في `.env` للمتجر، وجّه webhook الأورderات إلى:
+في `.env` للمتجر، وجّه webhook الأوردرات إلى:
 
 ```
 https://llrbznzcyfwylfpuuoky.supabase.co/functions/v1/incoming-order

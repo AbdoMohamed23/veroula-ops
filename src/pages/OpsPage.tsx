@@ -17,6 +17,7 @@ import { CapitalBreakdownModal } from '@/components/ops/modals/CapitalBreakdownM
 import { CapitalModal } from '@/components/ops/modals/CapitalModal'
 import { ConfirmDeleteModal } from '@/components/ops/modals/ConfirmDeleteModal'
 import { ExecutorModal } from '@/components/ops/modals/ExecutorModal'
+import { ExecutorOrdersModal } from '@/components/ops/modals/ExecutorOrdersModal'
 import { ExpenseModal } from '@/components/ops/modals/ExpenseModal'
 import { ImageLightbox } from '@/components/ops/modals/ImageLightbox'
 import { MonthlyHistoryModal } from '@/components/ops/modals/MonthlyHistoryModal'
@@ -87,6 +88,10 @@ export function OpsShell() {
   const [supplyModal, setSupplyModal] = useState<{ open: boolean; order?: SupplyOrder | null }>({ open: false })
   const [productModal, setProductModal] = useState<{ open: boolean; product?: Product | null }>({ open: false })
   const [executorModal, setExecutorModal] = useState<{ open: boolean; executor?: Executor | null }>({ open: false })
+  const [executorOrdersModal, setExecutorOrdersModal] = useState<{
+    open: boolean
+    executor: Executor | null
+  }>({ open: false, executor: null })
   const [urgentModal, setUrgentModal] = useState<{ open: boolean; product: Product | null }>({
     open: false,
     product: null,
@@ -277,6 +282,9 @@ export function OpsShell() {
                   )
                 }
                 onEdit={(executor) => setExecutorModal({ open: true, executor })}
+                onViewOrders={(executor) =>
+                  setExecutorOrdersModal({ open: true, executor })
+                }
               />
             ))}
 
@@ -367,6 +375,17 @@ export function OpsShell() {
           } else {
             executorMutations.create.mutate(data, { onSuccess: () => setExecutorModal({ open: false }) })
           }
+        }}
+      />
+
+      <ExecutorOrdersModal
+        open={executorOrdersModal.open}
+        onClose={() => setExecutorOrdersModal({ open: false, executor: null })}
+        executor={executorOrdersModal.executor}
+        orders={orders}
+        onEditOrder={(order) => {
+          setExecutorOrdersModal({ open: false, executor: null })
+          setOrderModal({ open: true, order })
         }}
       />
 

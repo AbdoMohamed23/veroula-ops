@@ -6,11 +6,13 @@ export function TeamTab({
   orders,
   onDelete,
   onEdit,
+  onViewOrders,
 }: {
   executors: Executor[]
   orders: Order[]
   onDelete?: (id: string) => void
   onEdit?: (executor: Executor) => void
+  onViewOrders?: (executor: Executor) => void
 }) {
   return (
     <div className="tab-content space-y-4">
@@ -27,6 +29,7 @@ export function TeamTab({
               orders={orders}
               onEdit={onEdit}
               onDelete={onDelete}
+              onViewOrders={onViewOrders}
             />
           ))
         )}

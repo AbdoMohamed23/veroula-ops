@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { ProductCard } from '@/components/ops/cards/ProductCard'
 import { formatCurrency } from '@/lib/format'
 import type { Product } from '@/types/ops'
@@ -13,18 +14,43 @@ export function CatalogTab({
   onEdit?: (product: Product) => void
   onSell?: (product: Product) => void
 }) {
-  const catalogCapital = products.reduce(
-    (sum, p) => sum + p.costPrice * Math.max(0, p.stock),
-    0,
-  )
+  const stats = useMemo(() => {
+    let costCapital = 0
+    let sellingTotal = 0
+    let totalStock = 0
+
+    for (const p of products) {
+      const stock = Math.max(0, p.stock)
+      totalStock += stock
+      costCapital += p.costPrice * stock
+      sellingTotal += p.price * stock
+    }
+
+    return {
+      productCount: products.length,
+      costCapital,
+      sellingTotal,
+      totalStock,
+    }
+  }, [products])
 
   return (
     <div className="tab-content space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-bold">الكتالوج</h2>
-        <span className="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-          رأس مال البضاعة: {formatCurrency(catalogCapital)}
-        </span>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[10px] px-2 py-1 rounded-full bg-card border border-border text-foreground font-semibold">
+            {stats.productCount}
+          </span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-card border border-border text-muted-foreground">
+            الشراء:{' '}
+            <span className="text-primary font-semibold">{formatCurrency(stats.costCapital)}</span>
+          </span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-card border border-border text-muted-foreground">
+            البيع:{' '}
+            <span className="text-primary font-semibold">{formatCurrency(stats.sellingTotal)}</span>
+          </span>
+        </div>
       </div>
 
       {products.length === 0 ? (
