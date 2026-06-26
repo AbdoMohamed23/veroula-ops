@@ -161,6 +161,16 @@ export function OrderModal({
               </div>
             )}
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">الشحن (معلومة)</Label>
+            <Input
+              type="number"
+              value={form.shippingCost}
+              onChange={(e) => setForm({ ...form, shippingCost: e.target.value })}
+              dir="ltr"
+              className="bg-card h-10"
+            />
+          </div>
           {!isUrgent && (
             <>
               <div className="space-y-1.5">

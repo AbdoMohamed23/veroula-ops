@@ -80,7 +80,7 @@ function calcOrderFields(payload: OrderMutationPayload) {
   const executorRemaining = executorPrice - executorDeposit
   const netProfit = isUrgent
     ? totalPrice
-    : totalPrice - executorPrice - shippingCost - moderatorCommission
+    : totalPrice - executorPrice - moderatorCommission
 
   return {
     total_price: totalPrice,
