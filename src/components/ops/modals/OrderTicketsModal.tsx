@@ -13,7 +13,7 @@ import { getStatusBadgeForTicket } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import type { Order } from '@/types/ops'
 
-type TicketTab = 'client' | 'executor' | 'ops'
+type TicketTab = 'client' | 'executor' | 'veroula'
 
 type ToggleKey =
   | 'clientName'
@@ -58,7 +58,7 @@ const executorToggles: Record<ToggleKey, boolean> = {
   executorRemaining: true,
 }
 
-const opsToggles: Record<ToggleKey, boolean> = {
+const veroulaToggles: Record<ToggleKey, boolean> = {
   ...executorToggles,
   moderatorCommission: true,
   netProfit: true,
@@ -85,7 +85,7 @@ export function OrderTicketsModal({
   const [downloading, setDownloading] = useState(false)
   const [clientToggles, setClientToggles] = useState(defaultToggles)
   const [executorToggleState, setExecutorToggleState] = useState(executorToggles)
-  const [opsToggleState, setOpsToggleState] = useState(opsToggles)
+  const [veroulaToggleState, setVeroulaToggleState] = useState(veroulaToggles)
   const [showFieldToggles, setShowFieldToggles] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -107,14 +107,14 @@ export function OrderTicketsModal({
       ? clientToggles
       : activeTicket === 'executor'
         ? executorToggleState
-        : opsToggleState
+        : veroulaToggleState
 
   const setToggles =
     activeTicket === 'client'
       ? setClientToggles
       : activeTicket === 'executor'
         ? setExecutorToggleState
-        : setOpsToggleState
+        : setVeroulaToggleState
 
   const parsedImages = parseImages(order.images)
   const remainingPlusShipping = order.remaining + order.shippingCost
@@ -122,7 +122,7 @@ export function OrderTicketsModal({
   const tabs: { id: TicketTab; label: string; icon: typeof User }[] = [
     { id: 'client', label: 'بطاقة العميل', icon: User },
     { id: 'executor', label: 'بطاقة المنفذ', icon: Truck },
-    { id: 'ops', label: 'بطاقة OPS', icon: Building2 },
+    { id: 'veroula', label: 'بطاقة فيرولا', icon: Building2 },
   ]
 
   async function handleDownload() {
@@ -135,7 +135,7 @@ export function OrderTicketsModal({
       const labels: Record<TicketTab, string> = {
         client: 'بطاقة_العميل',
         executor: 'بطاقة_المنفذ',
-        ops: 'بطاقة_OPS',
+        veroula: 'بطاقة_فيرولا',
       }
       const link = document.createElement('a')
       link.download = `${labels[activeTicket]}_${order!.clientName}.png`
@@ -330,9 +330,8 @@ export function OrderTicketsModal({
             )}
           </div>
 
-          <div className="pt-2 border-t border-gray-200 flex items-center justify-center gap-1">
-            <span className="text-black font-bold text-lg">$</span>
-            <span className="text-xs font-bold text-gray-700">OPS</span>
+          <div className="pt-2 border-t border-gray-200 flex items-center justify-center">
+            <span className="text-sm font-bold tracking-wide text-[#3d5322]">Veroula</span>
           </div>
         </div>
 
@@ -345,7 +344,7 @@ export function OrderTicketsModal({
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <>
-              <Download className="size-4 ml-1" /> تحميل البطاقة PNG
+              <Download className="size-4 ml-1" /> تنزيل الصورة
             </>
           )}
         </Button>
