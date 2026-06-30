@@ -6,6 +6,7 @@ import type {
   Order,
   Product,
   SupplyOrder,
+  OwnerDebt,
 } from '@/types/ops'
 
 function num(v: unknown): number {
@@ -129,3 +130,15 @@ export function mapActivity(row: Record<string, unknown>): Activity {
     createdAt: String(row.created_at),
   }
 }
+
+export function mapOwnerDebt(row: Record<string, unknown>): OwnerDebt {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    amount: num(row.amount),
+    userId: String(row.user_id),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  }
+}
+

@@ -30,6 +30,12 @@ import {
 } from '@/lib/services/products'
 import { computeStats } from '@/lib/services/stats'
 import {
+  createOwnerDebt,
+  deleteOwnerDebt,
+  fetchOwnerDebts,
+  updateOwnerDebt,
+} from '@/lib/services/owner-debts'
+import {
   createSupplyOrder,
   deleteSupplyOrder,
   fetchSupplyOrders,
@@ -46,6 +52,7 @@ export const opsKeys = {
   stats: ['stats'] as const,
   activities: ['activities'] as const,
   moderatorPayments: ['moderator-payments'] as const,
+  ownerDebts: ['owner-debts'] as const,
 }
 
 function invalidateCore(queryClient: ReturnType<typeof useQueryClient>) {
@@ -83,6 +90,10 @@ export function useActivities() {
 
 export function useModeratorPayments() {
   return useQuery({ queryKey: opsKeys.moderatorPayments, queryFn: fetchModeratorPayments })
+}
+
+export function useOwnerDebts() {
+  return useQuery({ queryKey: opsKeys.ownerDebts, queryFn: fetchOwnerDebts })
 }
 
 export function useOrderMutations() {
@@ -329,4 +340,40 @@ export function useModeratorPaymentMutation() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+}
+
+export function useOwnerDebtMutations() {
+  const queryClient = useQueryClient()
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: opsKeys.ownerDebts })
+    invalidateCore(queryClient)
+  }
+
+  return {
+    remove: useMutation({
+      mutationFn: deleteOwnerDebt,
+      onSuccess: () => {
+        invalidate()
+        toast.success('تم حذف الدين')
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+    create: useMutation({
+      mutationFn: createOwnerDebt,
+      onSuccess: () => {
+        invalidate()
+        toast.success('تمت إضافة الدين')
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+    update: useMutation({
+      mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateOwnerDebt>[1] }) =>
+        updateOwnerDebt(id, payload),
+      onSuccess: () => {
+        invalidate()
+        toast.success('تم تحديث الدين')
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  }
 }

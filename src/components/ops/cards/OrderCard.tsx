@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   CreditCard,
   Edit3,
   ShoppingBag,
@@ -41,6 +42,15 @@ function parseCustomerMeta(str?: string | null) {
   }
 }
 
+function parseImages(str?: string): string[] {
+  try {
+    const arr = JSON.parse(str || '[]')
+    return Array.isArray(arr) ? (arr as string[]) : []
+  } catch {
+    return []
+  }
+}
+
 export function OrderCard({
   order,
   products = [],
@@ -49,6 +59,7 @@ export function OrderCard({
   onComplete,
   onCancel,
   onDetails,
+  onViewImage,
 }: {
   order: Order
   products?: Product[]
@@ -57,12 +68,33 @@ export function OrderCard({
   onComplete?: (id: string) => void
   onCancel?: (id: string) => void
   onDetails?: (order: Order) => void
+  onViewImage?: (src: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const actionsRef = useRef<HTMLDivElement>(null)
   const isStore = isStoreOrder(order)
   const storeItems = useMemo(() => parseStoreOrderItems(order.orderItems), [order.orderItems])
   const customerMeta = useMemo(() => parseCustomerMeta(order.customerMeta), [order.customerMeta])
   const hasTopBadge = order.isUrgent || isStore
+
+  // Collect images: order images first, then product image as fallback
+  const orderImages = useMemo(() => parseImages(order.images), [order.images])
+  const productImage = useMemo(() => {
+    if (order.product?.image) return order.product.image
+    if (order.productId) {
+      const p = products.find((pr) => pr.id === order.productId)
+      return p?.image || ''
+    }
+    return ''
+  }, [order.product, order.productId, products])
+  const allImages = useMemo(() => {
+    const imgs = orderImages.length > 0 ? orderImages : productImage ? [productImage] : []
+    return imgs.slice(0, 3)
+  }, [orderImages, productImage])
+
+  // Close dropdown on outside click
+  const handleActionsToggle = () => setActionsOpen((v) => !v)
 
   return (
     <div
@@ -86,7 +118,8 @@ export function OrderCard({
         </div>
       )}
 
-      <div className={cn('flex items-start justify-between', hasTopBadge ? 'pt-5' : 'pt-1')}>
+      {/* Header: name + status on right, date + images on left */}
+      <div className={cn('flex items-start justify-between gap-2', hasTopBadge ? 'pt-5' : 'pt-1')}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-foreground font-semibold text-sm truncate">{order.clientName}</h3>
@@ -101,9 +134,34 @@ export function OrderCard({
             </p>
           )}
         </div>
-        <span className="text-muted-foreground text-xs whitespace-nowrap mr-2">
-          {formatDate(order.createdAt)}
-        </span>
+
+        {/* Date + image thumbnails on the left */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span className="text-muted-foreground text-xs whitespace-nowrap">
+            {formatDate(order.createdAt)}
+          </span>
+          {allImages.length > 0 && (
+            <div className="flex gap-1">
+              {allImages.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => onViewImage?.(src)}
+                  className="size-9 rounded-lg overflow-hidden border border-border/60 hover:border-primary/50 transition-colors shrink-0"
+                >
+                  <img
+                    src={src}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {isStore && storeItems.length > 0 && (
@@ -188,7 +246,8 @@ export function OrderCard({
         </div>
       )}
 
-      <div className="flex gap-2 pt-1 flex-wrap">
+      {/* Actions row */}
+      <div className="flex gap-2 pt-1 items-center">
         <Button
           size="sm"
           variant="ghost"
@@ -205,34 +264,51 @@ export function OrderCard({
         >
           <CreditCard className="size-3.5 ml-1" /> البطاقات
         </Button>
-        {order.status === 'pending' && (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-green-400 h-8 px-2"
-              onClick={() => onComplete?.(order.id)}
+
+        {/* إجراءات Dropdown */}
+        <div ref={actionsRef} className="relative mr-auto">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground h-8 px-2 gap-1"
+            onClick={handleActionsToggle}
+          >
+            إجراءات
+            <ChevronDown className={cn('size-3.5 transition-transform', actionsOpen && 'rotate-180')} />
+          </Button>
+          {actionsOpen && (
+            <div
+              className="absolute left-0 bottom-full mb-1 z-50 min-w-[130px] bg-card border border-border rounded-xl shadow-lg overflow-hidden"
+              onMouseLeave={() => setActionsOpen(false)}
             >
-              <CheckCircle2 className="size-3.5 ml-1" /> إكمال
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-400 h-8 px-2"
-              onClick={() => onCancel?.(order.id)}
-            >
-              <XCircle className="size-3.5 ml-1" /> إلغاء
-            </Button>
-          </>
-        )}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-red-400 h-8 px-2 mr-auto"
-          onClick={() => onDelete?.(order.id)}
-        >
-          <Trash2 className="size-3.5 ml-1" /> حذف
-        </Button>
+              {order.status === 'pending' && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-green-400 hover:bg-green-500/10 transition-colors"
+                  onClick={() => { setActionsOpen(false); onComplete?.(order.id) }}
+                >
+                  <CheckCircle2 className="size-3.5" /> إكمال
+                </button>
+              )}
+              {order.status === 'pending' && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-amber-400 hover:bg-amber-500/10 transition-colors"
+                  onClick={() => { setActionsOpen(false); onCancel?.(order.id) }}
+                >
+                  <XCircle className="size-3.5" /> إلغاء
+                </button>
+              )}
+              <button
+                type="button"
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                onClick={() => { setActionsOpen(false); onDelete?.(order.id) }}
+              >
+                <Trash2 className="size-3.5" /> حذف
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

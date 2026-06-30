@@ -21,6 +21,7 @@ import { ExecutorOrdersModal } from '@/components/ops/modals/ExecutorOrdersModal
 import { ExpenseModal } from '@/components/ops/modals/ExpenseModal'
 import { ImageLightbox } from '@/components/ops/modals/ImageLightbox'
 import { MonthlyHistoryModal } from '@/components/ops/modals/MonthlyHistoryModal'
+import { OwnerDebtModal } from '@/components/ops/modals/OwnerDebtModal'
 import { OrderModal } from '@/components/ops/modals/OrderModal'
 import { OrderTicketsModal } from '@/components/ops/modals/OrderTicketsModal'
 import { ProductModal } from '@/components/ops/modals/ProductModal'
@@ -45,6 +46,8 @@ import {
   useModeratorPayments,
   useOrderMutations,
   useOrders,
+  useOwnerDebts,
+  useOwnerDebtMutations,
   useProductMutations,
   useProducts,
   useStats,
@@ -52,7 +55,7 @@ import {
   useSupplyOrders,
 } from '@/hooks/useOpsQueries'
 import { cn } from '@/lib/utils'
-import type { Executor, Expense, Order, Product, SupplyOrder, TabId } from '@/types/ops'
+import type { Executor, Expense, Order, OwnerDebt, Product, SupplyOrder, TabId } from '@/types/ops'
 
 const TAB_STORAGE_KEY = 'veroula-ops-tab'
 
@@ -100,6 +103,10 @@ export function OpsShell() {
     open: false,
     expense: null,
   })
+  const [ownerDebtModal, setOwnerDebtModal] = useState<{ open: boolean; debt: OwnerDebt | null }>({
+    open: false,
+    debt: null,
+  })
   const [capitalModal, setCapitalModal] = useState(false)
   const [capitalBreakdownModal, setCapitalBreakdownModal] = useState(false)
   const [monthlyHistoryModal, setMonthlyHistoryModal] = useState(false)
@@ -121,6 +128,7 @@ export function OpsShell() {
   const { data: executors = [], isLoading: executorsLoading } = useExecutors()
   const { data: products = [], isLoading: productsLoading } = useProducts()
   const { data: expenses = [], isLoading: expensesLoading } = useExpenses()
+  const { data: ownerDebts = [], isLoading: ownerDebtsLoading } = useOwnerDebts()
   const { data: supplyOrders = [], isLoading: supplyLoading } = useSupplyOrders()
   const { data: stats, isLoading: statsLoading } = useStats()
   const { data: activities = [], isLoading: activitiesLoading } = useActivities()
@@ -131,6 +139,7 @@ export function OpsShell() {
   const executorMutations = useExecutorMutations()
   const productMutations = useProductMutations()
   const expenseMutations = useExpenseMutations()
+  const ownerDebtMutations = useOwnerDebtMutations()
   const capitalMutation = useCapitalMutation()
   const moderatorPayMutation = useModeratorPaymentMutation()
 
@@ -143,7 +152,8 @@ export function OpsShell() {
     supplyMutations.remove.isPending ||
     productMutations.remove.isPending ||
     executorMutations.remove.isPending ||
-    expenseMutations.remove.isPending
+    expenseMutations.remove.isPending ||
+    ownerDebtMutations.remove.isPending
 
   const setActiveTab = useCallback((tab: TabId) => {
     setActiveTabState(tab)
@@ -167,7 +177,7 @@ export function OpsShell() {
     }
   }, [activeTab])
 
-  const dashboardLoading = statsLoading || expensesLoading || activitiesLoading
+  const dashboardLoading = statsLoading || expensesLoading || ownerDebtsLoading || activitiesLoading
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground" dir="rtl">
@@ -202,6 +212,7 @@ export function OpsShell() {
               <DashboardTab
                 stats={stats}
                 expenses={expenses}
+                ownerDebts={ownerDebts}
                 activities={activities}
                 onEditCapital={() => setCapitalModal(true)}
                 onAddExpense={() => setExpenseModal({ open: true, expense: null })}
@@ -209,6 +220,13 @@ export function OpsShell() {
                 onDeleteExpense={(id) =>
                   askDelete('حذف المصروف', 'هل تريد حذف هذا المصروف؟', () =>
                     expenseMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
+                  )
+                }
+                onAddOwnerDebt={() => setOwnerDebtModal({ open: true, debt: null })}
+                onEditOwnerDebt={(debt) => setOwnerDebtModal({ open: true, debt })}
+                onDeleteOwnerDebt={(id) =>
+                  askDelete('حذف الدين', 'هل تريد حذف هذا الدين؟', () =>
+                    ownerDebtMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
                   )
                 }
                 onCapitalBreakdown={() => setCapitalBreakdownModal(true)}
@@ -232,6 +250,7 @@ export function OpsShell() {
                 }
                 onEdit={(order) => setOrderModal({ open: true, order })}
                 onDetails={(order) => setOrderTicketsModal({ open: true, order })}
+                onViewImage={(src) => setLightbox({ open: true, src })}
               />
             ))}
 
@@ -415,6 +434,25 @@ export function OpsShell() {
           } else {
             expenseMutations.create.mutate(data, {
               onSuccess: () => setExpenseModal({ open: false, expense: null }),
+            })
+          }
+        }}
+      />
+
+      <OwnerDebtModal
+        open={ownerDebtModal.open}
+        onClose={() => setOwnerDebtModal({ open: false, debt: null })}
+        debt={ownerDebtModal.debt}
+        saving={ownerDebtMutations.create.isPending || ownerDebtMutations.update.isPending}
+        onSave={(data) => {
+          if (ownerDebtModal.debt) {
+            ownerDebtMutations.update.mutate(
+              { id: ownerDebtModal.debt.id, payload: data },
+              { onSuccess: () => setOwnerDebtModal({ open: false, debt: null }) },
+            )
+          } else {
+            ownerDebtMutations.create.mutate(data, {
+              onSuccess: () => setOwnerDebtModal({ open: false, debt: null }),
             })
           }
         }}

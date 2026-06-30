@@ -26,6 +26,7 @@ export function OrdersTab({
   onDelete,
   onEdit,
   onDetails,
+  onViewImage,
 }: {
   orders: Order[]
   products: Product[]
@@ -34,6 +35,7 @@ export function OrdersTab({
   onDelete?: (id: string) => void
   onEdit?: (order: Order) => void
   onDetails?: (order: Order) => void
+  onViewImage?: (src: string) => void
 }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -106,6 +108,7 @@ export function OrdersTab({
               onComplete={onComplete}
               onCancel={onCancel}
               onDetails={onDetails}
+              onViewImage={onViewImage}
             />
           ))
         )}

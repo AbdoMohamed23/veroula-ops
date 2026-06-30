@@ -3,6 +3,7 @@ import { fetchExpenses } from '@/lib/services/expenses'
 import { fetchExecutors } from '@/lib/services/executors'
 import { fetchModeratorPayments } from '@/lib/services/moderator'
 import { fetchOrders } from '@/lib/services/orders'
+import { fetchOwnerDebts } from '@/lib/services/owner-debts'
 import { fetchSupplyOrders } from '@/lib/services/supply'
 import type { Stats } from '@/types/ops'
 
@@ -12,7 +13,7 @@ function monthKey(dateStr: string): string {
 }
 
 export async function computeStats(): Promise<Stats> {
-  const [initialCapital, allOrders, supplyOrders, expenses, moderatorPayments, executors] =
+  const [initialCapital, allOrders, supplyOrders, expenses, moderatorPayments, executors, ownerDebts] =
     await Promise.all([
       fetchCapitalAmount(),
       fetchOrders(),
@@ -20,6 +21,7 @@ export async function computeStats(): Promise<Stats> {
       fetchExpenses(),
       fetchModeratorPayments(),
       fetchExecutors(),
+      fetchOwnerDebts(),
     ])
 
   const completedOrders = allOrders.filter((o) => o.status === 'completed')
@@ -97,6 +99,11 @@ export async function computeStats(): Promise<Stats> {
     addExpense(ex.createdAt, ex.amount)
   }
 
+  let totalOwnerDebtsAmount = 0
+  for (const d of ownerDebts) {
+    totalOwnerDebtsAmount += d.amount
+  }
+
   const currentMonthStats = monthlyStats[currentMonthKey] || {
     monthStr: currentMonthKey,
     profit: 0,
@@ -129,11 +136,13 @@ export async function computeStats(): Promise<Stats> {
     pendingCashflow -
     totalExpensesAmount -
     totalModeratorPaymentsAllTime -
-    supplyPurchasesTotal
+    supplyPurchasesTotal -
+    totalOwnerDebtsAmount
 
   return {
     initialCapital,
     totalAvailableCapital,
+    totalOwnerDebtsAllTime: totalOwnerDebtsAmount,
     totalNetProfitAllTime: totalNormalProfit,
     totalExpensesAllTime: totalExpensesAmount,
     currentMonthProfit: currentMonthStats.profit,
@@ -160,6 +169,7 @@ export async function computeStats(): Promise<Stats> {
       { label: 'مدفوعات المودريتور', amount: totalModeratorPaymentsAllTime, type: 'subtract' as const },
       { label: 'عربونات مشتريات معلقة', amount: pendingSupplyDeposits, type: 'subtract' as const },
       { label: 'مشتريات مكتملة', amount: completedSupplyTotal, type: 'subtract' as const },
+      { label: 'ديون المالكين', amount: totalOwnerDebtsAmount, type: 'subtract' as const },
     ].filter((x) => x.amount !== 0),
   }
 }

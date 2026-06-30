@@ -1,27 +1,35 @@
-import { Activity as ActivityIcon, CircleDollarSign, Clock, Edit3, Plus, Trash2, TrendingUp, Wallet } from 'lucide-react'
+import { Activity as ActivityIcon, CircleDollarSign, Clock, Edit3, HandCoins, Plus, Trash2, TrendingUp, Wallet } from 'lucide-react'
 import { StatCard } from '@/components/ops/StatCard'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/format'
-import type { Activity, Expense, Stats } from '@/types/ops'
+import type { Activity, Expense, OwnerDebt, Stats } from '@/types/ops'
 
 export function DashboardTab({
   stats,
   expenses,
+  ownerDebts,
   activities,
   onEditCapital,
   onAddExpense,
   onEditExpense,
   onDeleteExpense,
+  onAddOwnerDebt,
+  onEditOwnerDebt,
+  onDeleteOwnerDebt,
   onCapitalBreakdown,
   onMonthlyHistory,
 }: {
   stats: Stats
   expenses: Expense[]
+  ownerDebts: OwnerDebt[]
   activities: Activity[]
   onEditCapital?: () => void
   onAddExpense?: () => void
   onEditExpense?: (expense: Expense) => void
   onDeleteExpense?: (id: string) => void
+  onAddOwnerDebt?: () => void
+  onEditOwnerDebt?: (debt: OwnerDebt) => void
+  onDeleteOwnerDebt?: (id: string) => void
   onCapitalBreakdown?: () => void
   onMonthlyHistory?: () => void
 }) {
@@ -79,6 +87,7 @@ export function DashboardTab({
         <p className="text-foreground text-xl font-bold">{formatCurrency(stats.initialCapital)}</p>
       </div>
 
+      {/* إدارة المصروفات */}
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -119,6 +128,66 @@ export function DashboardTab({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* ديون المالكين */}
+      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-1.5">
+              <HandCoins className="size-4 text-primary" />
+              ديون المالكين
+            </h3>
+            <p className="text-xs text-muted-foreground">تخصم مباشرة من الرصيد الكلي</p>
+          </div>
+          <Button
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-2 text-xs"
+            onClick={onAddOwnerDebt}
+          >
+            <Plus className="size-3.5 ml-1" /> إضافة دين
+          </Button>
+        </div>
+        {ownerDebts.length === 0 ? (
+          <p className="text-muted-foreground text-xs text-center py-4">لا توجد ديون مسجلة</p>
+        ) : (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {ownerDebts.map((debt) => (
+              <div
+                key={debt.id}
+                className="flex items-center justify-between bg-background/50 p-2.5 rounded-lg border border-border/60 text-xs"
+              >
+                <button
+                  type="button"
+                  className="min-w-0 text-right flex-1"
+                  onClick={() => onEditOwnerDebt?.(debt)}
+                >
+                  <p className="text-foreground font-medium truncate">{debt.name}</p>
+                  <p className="text-muted-foreground text-[10px]">{formatDate(debt.createdAt)}</p>
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-primary font-semibold">{formatCurrency(debt.amount)}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-400 h-7 w-7 p-0"
+                    onClick={() => onDeleteOwnerDebt?.(debt.id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {ownerDebts.length > 0 && (
+          <div className="flex justify-between items-center pt-1 border-t border-border/40 text-xs">
+            <span className="text-muted-foreground">الإجمالي</span>
+            <span className="text-primary font-bold">
+              {formatCurrency(ownerDebts.reduce((s, d) => s + d.amount, 0))}
+            </span>
           </div>
         )}
       </div>

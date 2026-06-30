@@ -86,11 +86,21 @@ export interface SupplyOrder {
   updatedAt: string
 }
 
+export interface OwnerDebt {
+  id: string
+  name: string
+  amount: number
+  userId: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Stats {
   initialCapital: number
   totalAvailableCapital: number
   totalNetProfitAllTime: number
   totalExpensesAllTime: number
+  totalOwnerDebtsAllTime: number
   currentMonthProfit: number
   currentMonthExpenses: number
   pendingOrdersCount: number
@@ -140,3 +150,4 @@ export interface ModeratorPaymentRecord {
 export function isStoreOrder(order: Order) {
   return order.source === 'veroula_store'
 }
+
