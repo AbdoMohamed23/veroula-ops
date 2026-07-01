@@ -243,6 +243,14 @@ export function OrderCard({
               <span className="text-purple-400">{formatCurrency(order.moderatorCommission)}</span>
             </div>
           )}
+          {order.notes && (
+            <div className="flex flex-col gap-1 border-t border-border/40 pt-2 mt-2">
+              <span className="text-muted-foreground font-semibold">ملاحظات:</span>
+              <p className="text-foreground/90 whitespace-pre-line bg-background/30 p-2 rounded-lg text-right">
+                {order.notes}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

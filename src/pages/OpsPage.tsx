@@ -22,6 +22,7 @@ import { ExpenseModal } from '@/components/ops/modals/ExpenseModal'
 import { ImageLightbox } from '@/components/ops/modals/ImageLightbox'
 import { MonthlyHistoryModal } from '@/components/ops/modals/MonthlyHistoryModal'
 import { OwnerDebtModal } from '@/components/ops/modals/OwnerDebtModal'
+import { OwnerDebtsListModal } from '@/components/ops/modals/OwnerDebtsListModal'
 import { OrderModal } from '@/components/ops/modals/OrderModal'
 import { OrderTicketsModal } from '@/components/ops/modals/OrderTicketsModal'
 import { ProductModal } from '@/components/ops/modals/ProductModal'
@@ -83,8 +84,7 @@ function TabLoader() {
 }
 
 export function OpsShell() {
-  const { profile, signOut } = useAuth()
-  const displayName = profile?.name || 'مدير النظام'
+  const { signOut } = useAuth()
   const [activeTab, setActiveTabState] = useState<TabId>(() => readStoredTab())
 
   const [orderModal, setOrderModal] = useState<{ open: boolean; order?: Order | null }>({ open: false })
@@ -110,6 +110,7 @@ export function OpsShell() {
   const [capitalModal, setCapitalModal] = useState(false)
   const [capitalBreakdownModal, setCapitalBreakdownModal] = useState(false)
   const [monthlyHistoryModal, setMonthlyHistoryModal] = useState(false)
+  const [ownerDebtsListModal, setOwnerDebtsListModal] = useState(false)
   const [orderTicketsModal, setOrderTicketsModal] = useState<{ open: boolean; order: Order | null }>({
     open: false,
     order: null,
@@ -185,10 +186,6 @@ export function OpsShell() {
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <OpsBrand />
           <div className="flex items-center gap-1.5">
-            <span className="text-foreground/80 text-xs bg-card border border-border px-2 py-1 rounded-xl flex items-center gap-1.5 max-w-[140px]">
-              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
-              <span className="truncate">{displayName}</span>
-            </span>
             <ThemeToggle />
             <Button
               variant="ghost"
@@ -212,7 +209,6 @@ export function OpsShell() {
               <DashboardTab
                 stats={stats}
                 expenses={expenses}
-                ownerDebts={ownerDebts}
                 activities={activities}
                 onEditCapital={() => setCapitalModal(true)}
                 onAddExpense={() => setExpenseModal({ open: true, expense: null })}
@@ -222,13 +218,7 @@ export function OpsShell() {
                     expenseMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
                   )
                 }
-                onAddOwnerDebt={() => setOwnerDebtModal({ open: true, debt: null })}
-                onEditOwnerDebt={(debt) => setOwnerDebtModal({ open: true, debt })}
-                onDeleteOwnerDebt={(id) =>
-                  askDelete('حذف الدين', 'هل تريد حذف هذا الدين؟', () =>
-                    ownerDebtMutations.remove.mutate(id, { onSuccess: () => setDeleteConfirm(null) }),
-                  )
-                }
+                onOpenOwnerDebts={() => setOwnerDebtsListModal(true)}
                 onCapitalBreakdown={() => setCapitalBreakdownModal(true)}
                 onMonthlyHistory={() => setMonthlyHistoryModal(true)}
               />
@@ -457,6 +447,25 @@ export function OpsShell() {
           }
         }}
       />
+
+      {stats && (
+        <OwnerDebtsListModal
+          open={ownerDebtsListModal}
+          onClose={() => setOwnerDebtsListModal(false)}
+          stats={stats}
+          ownerDebts={ownerDebts}
+          onAddOwnerDebt={() => setOwnerDebtModal({ open: true, debt: null })}
+          onEditOwnerDebt={(debt) => setOwnerDebtModal({ open: true, debt })}
+          onDeleteOwnerDebt={(id) =>
+            askDelete('حذف الدين', 'هل تريد حذف هذا الدين؟', () =>
+              ownerDebtMutations.remove.mutate(id, { onSuccess: () => {
+                setDeleteConfirm(null)
+                // Don't close list modal so user stays there
+              } }),
+            )
+          }
+        />
+      )}
 
       <CapitalModal
         open={capitalModal}

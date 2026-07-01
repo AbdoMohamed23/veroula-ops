@@ -58,6 +58,7 @@ export interface Order {
   websiteNote?: string | null
   governorate?: string
   customerMeta?: string | null
+  notes?: string | null
 }
 
 export interface Expense {

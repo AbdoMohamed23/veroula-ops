@@ -224,6 +224,7 @@ export async function createOrder(payload: OrderMutationPayload & Record<string,
       is_urgent: isUrgent,
       product_id: productId,
       images: (payload.images as string) ?? '[]',
+      notes: (payload.notes as string) ?? null,
       ...calc,
     })
     .select(ORDER_SELECT)
@@ -265,6 +266,7 @@ export async function updateOrder(id: string, payload: OrderMutationPayload & Re
       ...(payload.isUrgent != null ? { is_urgent: payload.isUrgent } : {}),
       ...(payload.productId !== undefined ? { product_id: payload.productId } : {}),
       ...(payload.images != null ? { images: payload.images as string } : {}),
+      ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
       ...calc,
     })
     .eq('id', id)

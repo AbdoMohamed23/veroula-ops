@@ -45,6 +45,7 @@ export function OrderModal({
     moderatorCommission: '',
     deliveryPeriod: '',
     status: 'pending' as OrderStatus,
+    notes: '',
   })
   const [images, setImages] = useState<string[]>([])
 
@@ -64,6 +65,7 @@ export function OrderModal({
         moderatorCommission: String(order.moderatorCommission),
         deliveryPeriod: order.deliveryPeriod,
         status: order.status,
+        notes: order.notes || '',
       })
       try {
         setImages(JSON.parse(order.images || '[]'))
@@ -84,6 +86,7 @@ export function OrderModal({
         moderatorCommission: '',
         deliveryPeriod: '',
         status: 'pending',
+        notes: '',
       })
       setImages([])
     }
@@ -99,6 +102,7 @@ export function OrderModal({
       totalPrice: Number(form.totalPrice),
       shippingCost: Number(form.shippingCost) || 0,
       moderatorCommission: Number(form.moderatorCommission) || 0,
+      notes: form.notes.trim(),
     }
 
     if (isUrgent) {
@@ -220,6 +224,14 @@ export function OrderModal({
               </select>
             </div>
           )}
+          <div className="space-y-1.5">
+            <Label className="text-xs">ملاحظات الأوردر</Label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="w-full min-h-[70px] rounded-md border border-border bg-card p-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>إلغاء</Button>
             <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground">

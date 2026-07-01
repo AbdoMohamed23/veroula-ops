@@ -77,6 +77,7 @@ export function mapOrder(row: Record<string, unknown>): Order {
     websiteNote: row.website_note != null ? String(row.website_note) : null,
     governorate: row.governorate != null ? String(row.governorate) : undefined,
     customerMeta: row.customer_meta != null ? String(row.customer_meta) : null,
+    notes: row.notes != null ? String(row.notes) : null,
   }
 }
 
