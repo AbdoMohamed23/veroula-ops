@@ -88,6 +88,8 @@ export interface SupplyOrder {
 
 export interface OwnerDebt {
   id: string
+  owner: 'abdo' | 'osha'
+  type: 'withdraw' | 'repay' | 'ops_owes'
   name: string
   amount: number
   userId: string
@@ -101,6 +103,8 @@ export interface Stats {
   totalNetProfitAllTime: number
   totalExpensesAllTime: number
   totalOwnerDebtsAllTime: number
+  abdoBalance: number
+  oshaBalance: number
   currentMonthProfit: number
   currentMonthExpenses: number
   pendingOrdersCount: number

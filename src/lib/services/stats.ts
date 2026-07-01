@@ -99,10 +99,18 @@ export async function computeStats(): Promise<Stats> {
     addExpense(ex.createdAt, ex.amount)
   }
 
-  let totalOwnerDebtsAmount = 0
+  let abdoBalance = 0
+  let oshaBalance = 0
   for (const d of ownerDebts) {
-    totalOwnerDebtsAmount += d.amount
+    const factor = d.type === 'withdraw' ? 1 : -1
+    const val = d.amount * factor
+    if (d.owner === 'abdo') {
+      abdoBalance += val
+    } else if (d.owner === 'osha') {
+      oshaBalance += val
+    }
   }
+  const totalOwnerDebtsAmount = abdoBalance + oshaBalance
 
   const currentMonthStats = monthlyStats[currentMonthKey] || {
     monthStr: currentMonthKey,
@@ -143,6 +151,8 @@ export async function computeStats(): Promise<Stats> {
     initialCapital,
     totalAvailableCapital,
     totalOwnerDebtsAllTime: totalOwnerDebtsAmount,
+    abdoBalance,
+    oshaBalance,
     totalNetProfitAllTime: totalNormalProfit,
     totalExpensesAllTime: totalExpensesAmount,
     currentMonthProfit: currentMonthStats.profit,
@@ -169,7 +179,16 @@ export async function computeStats(): Promise<Stats> {
       { label: 'مدفوعات المودريتور', amount: totalModeratorPaymentsAllTime, type: 'subtract' as const },
       { label: 'عربونات مشتريات معلقة', amount: pendingSupplyDeposits, type: 'subtract' as const },
       { label: 'مشتريات مكتملة', amount: completedSupplyTotal, type: 'subtract' as const },
-      { label: 'ديون المالكين', amount: totalOwnerDebtsAmount, type: 'subtract' as const },
+      ...(abdoBalance > 0
+        ? [{ label: 'سحوبات المالك (Abdo)', amount: abdoBalance, type: 'subtract' as const }]
+        : abdoBalance < 0
+          ? [{ label: 'دائن للموقع (Abdo)', amount: Math.abs(abdoBalance), type: 'add' as const }]
+          : []),
+      ...(oshaBalance > 0
+        ? [{ label: 'سحوبات المالك (Osha)', amount: oshaBalance, type: 'subtract' as const }]
+        : oshaBalance < 0
+          ? [{ label: 'دائن للموقع (Osha)', amount: Math.abs(oshaBalance), type: 'add' as const }]
+          : []),
     ].filter((x) => x.amount !== 0),
   }
 }

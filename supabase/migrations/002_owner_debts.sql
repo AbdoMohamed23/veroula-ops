@@ -2,7 +2,9 @@
 create table if not exists public.ops_owner_debts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
+  owner text not null check (owner in ('abdo', 'osha')),
+  type text not null check (type in ('withdraw', 'repay', 'ops_owes')),
+  name text not null, -- البيان / الوصف
   amount numeric not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

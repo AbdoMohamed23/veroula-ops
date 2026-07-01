@@ -134,6 +134,8 @@ export function mapActivity(row: Record<string, unknown>): Activity {
 export function mapOwnerDebt(row: Record<string, unknown>): OwnerDebt {
   return {
     id: String(row.id),
+    owner: row.owner as 'abdo' | 'osha',
+    type: row.type as 'withdraw' | 'repay' | 'ops_owes',
     name: String(row.name),
     amount: num(row.amount),
     userId: String(row.user_id),

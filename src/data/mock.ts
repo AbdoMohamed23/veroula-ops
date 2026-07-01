@@ -275,6 +275,8 @@ export const mockStats: Stats = {
   totalNetProfitAllTime: 18500,
   totalExpensesAllTime: 4200,
   totalOwnerDebtsAllTime: 0,
+  abdoBalance: 0,
+  oshaBalance: 0,
   currentMonthProfit: 3200,
   currentMonthExpenses: 750,
   pendingOrdersCount: 3,
