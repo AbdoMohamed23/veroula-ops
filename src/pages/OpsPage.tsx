@@ -184,7 +184,10 @@ export function OpsShell() {
     <div className="min-h-screen flex flex-col bg-background text-foreground" dir="rtl">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3">
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <OpsBrand />
+          <div className="flex items-center gap-1.5">
+            <OpsBrand />
+            <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+          </div>
           <div className="flex items-center gap-1.5">
             <ThemeToggle />
             <Button
