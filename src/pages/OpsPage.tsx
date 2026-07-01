@@ -187,7 +187,7 @@ export function OpsShell() {
           <OpsBrand />
           <div className="flex items-center gap-1.5">
             <span className="text-foreground/80 text-xs bg-card border border-border px-2 py-1 rounded-xl flex items-center gap-1.5 max-w-[140px]">
-              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span className="size-1.5 shrink-0 rounded-full bg-primary" />
               <span className="truncate">{profile?.name || 'ops'}</span>
             </span>
             <ThemeToggle />

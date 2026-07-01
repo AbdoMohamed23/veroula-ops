@@ -16,7 +16,7 @@ export async function fetchOwnerDebts(): Promise<OwnerDebt[]> {
 export async function deleteOwnerDebt(id: string) {
   const { error } = await supabase.from('ops_owner_debts').delete().eq('id', id)
   if (error) throw new Error(error.message)
-  await logActivity('owner_debt_deleted', 'تم حذف دين للمالكين')
+  void logActivity('owner_debt_deleted', 'تم حذف دين للمالكين')
 }
 
 export async function createOwnerDebt(payload: {
@@ -46,7 +46,7 @@ export async function createOwnerDebt(payload: {
   
   const ownerLabel = payload.owner === 'abdo' ? 'عبده' : 'أوشا'
   const typeLabel = payload.type === 'withdraw' ? 'سحب/سلفة' : payload.type === 'repay' ? 'تسديد دين' : 'دائن للموقع'
-  await logActivity('owner_debt_added', `تمت إضافة حركة للمالك ${ownerLabel} (${typeLabel}): ${payload.name} بقيمة ${payload.amount} ج.م`)
+  void logActivity('owner_debt_added', `تمت إضافة حركة للمالك ${ownerLabel} (${typeLabel}): ${payload.name} بقيمة ${payload.amount} ج.م`)
   
   return mapOwnerDebt(data as Record<string, unknown>)
 }
@@ -76,7 +76,7 @@ export async function updateOwnerDebt(
   
   const ownerLabel = payload.owner === 'abdo' ? 'عبده' : 'أوشا'
   const typeLabel = payload.type === 'withdraw' ? 'سحب/سلفة' : payload.type === 'repay' ? 'تسديد دين' : 'دائن للموقع'
-  await logActivity('owner_debt_updated', `تم تعديل حركة للمالك ${ownerLabel} (${typeLabel}): ${payload.name} بقيمة ${payload.amount} ج.م`)
+  void logActivity('owner_debt_updated', `تم تعديل حركة للمالك ${ownerLabel} (${typeLabel}): ${payload.name} بقيمة ${payload.amount} ج.م`)
   
   return mapOwnerDebt(data as Record<string, unknown>)
 }
