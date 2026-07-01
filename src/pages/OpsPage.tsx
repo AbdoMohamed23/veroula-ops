@@ -84,7 +84,7 @@ function TabLoader() {
 }
 
 export function OpsShell() {
-  const { signOut } = useAuth()
+  const { profile, signOut } = useAuth()
   const [activeTab, setActiveTabState] = useState<TabId>(() => readStoredTab())
 
   const [orderModal, setOrderModal] = useState<{ open: boolean; order?: Order | null }>({ open: false })
@@ -184,11 +184,12 @@ export function OpsShell() {
     <div className="min-h-screen flex flex-col bg-background text-foreground" dir="rtl">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border px-4 py-3">
         <div className="flex items-center justify-between max-w-lg mx-auto">
+          <OpsBrand />
           <div className="flex items-center gap-1.5">
-            <OpsBrand />
-            <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
-          </div>
-          <div className="flex items-center gap-1.5">
+            <span className="text-foreground/80 text-xs bg-card border border-border px-2 py-1 rounded-xl flex items-center gap-1.5 max-w-[140px]">
+              <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />
+              <span className="truncate">{profile?.name || 'ops'}</span>
+            </span>
             <ThemeToggle />
             <Button
               variant="ghost"
