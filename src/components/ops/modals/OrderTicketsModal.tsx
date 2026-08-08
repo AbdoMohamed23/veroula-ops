@@ -283,9 +283,44 @@ export function OrderTicketsModal({
             {toggles.deliveryPeriod && order.deliveryPeriod && (
               <Row label="مدة التسليم" value={order.deliveryPeriod} />
             )}
-            {toggles.executorName && order.executor && (
-              <Row label="المنفذ" value={order.executor.name} />
-            )}
+            {toggles.executorName &&
+              (order.executorsDetail && order.executorsDetail.length > 0 ? (
+                <div className="border-t border-gray-300 pt-2 my-1 space-y-1.5">
+                  <span className="text-xs font-bold text-gray-800">
+                    تفاصيل المنفذين ({order.executorsDetail.length}):
+                  </span>
+                  {order.executorsDetail.map((ex, idx) => (
+                    <div key={idx} className="bg-gray-100 p-2 rounded-lg text-xs space-y-1">
+                      <div className="flex justify-between font-semibold">
+                        <span>
+                          #{idx + 1} {ex.executorName || 'منفذة'}
+                        </span>
+                        {ex.deliveryPeriod && <span>{ex.deliveryPeriod}</span>}
+                      </div>
+                      <div className="flex justify-between text-[11px] text-gray-700">
+                        <span>السعر: {formatCurrency(ex.price)}</span>
+                        <span>العربون: {formatCurrency(ex.deposit)}</span>
+                        <span>المتبقي: {formatCurrency(ex.remaining)}</span>
+                      </div>
+                      {ex.notes && <p className="text-[10px] text-gray-600">{ex.notes}</p>}
+                      {ex.images && ex.images.length > 0 && (
+                        <div className="flex gap-1 overflow-x-auto pt-1">
+                          {ex.images.map((img, i) => (
+                            <img
+                              key={i}
+                              src={img}
+                              alt=""
+                              className="size-10 rounded object-cover border border-gray-300"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : order.executor ? (
+                <Row label="المنفذ" value={order.executor.name} />
+              ) : null)}
             {toggles.orderPrice && (
               <Row label="سعر الأوردر" value={formatCurrency(order.totalPrice)} />
             )}

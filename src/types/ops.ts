@@ -27,6 +27,17 @@ export interface Product {
   updatedAt: string
 }
 
+export interface OrderExecutorItem {
+  executorId: string
+  executorName?: string
+  price: number
+  deposit: number
+  remaining: number
+  deliveryPeriod: string
+  images: string[]
+  notes?: string
+}
+
 export interface Order {
   id: string
   images: string
@@ -51,6 +62,7 @@ export interface Order {
   createdAt: string
   updatedAt: string
   executor?: Executor | null
+  executorsDetail?: OrderExecutorItem[] | null
   product?: Product | null
   source?: string
   externalOrderId?: string | null

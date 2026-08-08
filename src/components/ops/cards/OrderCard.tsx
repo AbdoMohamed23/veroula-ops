@@ -78,8 +78,12 @@ export function OrderCard({
   const customerMeta = useMemo(() => parseCustomerMeta(order.customerMeta), [order.customerMeta])
   const hasTopBadge = order.isUrgent || isStore
 
-  // Collect images: order images first, then product image as fallback
+  // Collect images: order images first, then executor item images, then product image as fallback
   const orderImages = useMemo(() => parseImages(order.images), [order.images])
+  const executorItemImages = useMemo(
+    () => (order.executorsDetail || []).flatMap((e) => e.images || []),
+    [order.executorsDetail],
+  )
   const productImage = useMemo(() => {
     if (order.product?.image) return order.product.image
     if (order.productId) {
@@ -88,13 +92,20 @@ export function OrderCard({
     }
     return ''
   }, [order.product, order.productId, products])
+
   const allImages = useMemo(() => {
-    const imgs = orderImages.length > 0 ? orderImages : productImage ? [productImage] : []
-    return imgs.slice(0, 3)
-  }, [orderImages, productImage])
+    const combined = [...orderImages, ...executorItemImages]
+    const imgs = combined.length > 0 ? combined : productImage ? [productImage] : []
+    return Array.from(new Set(imgs)).slice(0, 4)
+  }, [orderImages, executorItemImages, productImage])
 
   // Close dropdown on outside click
   const handleActionsToggle = () => setActionsOpen((v) => !v)
+
+  const multiExecutorNames = useMemo(() => {
+    if (!order.executorsDetail || order.executorsDetail.length === 0) return ''
+    return order.executorsDetail.map((e) => e.executorName).filter(Boolean).join('، ')
+  }, [order.executorsDetail])
 
   return (
     <div
@@ -125,9 +136,13 @@ export function OrderCard({
             <h3 className="text-foreground font-semibold text-sm truncate">{order.clientName}</h3>
             {getStatusBadge(order.status)}
           </div>
-          {order.executor && (
+          {order.executorsDetail && order.executorsDetail.length > 0 ? (
+            <p className="text-muted-foreground text-xs">
+              المنفذين ({order.executorsDetail.length}): {multiExecutorNames}
+            </p>
+          ) : order.executor ? (
             <p className="text-muted-foreground text-xs">المنفذ: {order.executor.name}</p>
-          )}
+          ) : null}
           {isStore && order.externalOrderId && (
             <p className="text-muted-foreground/60 text-[10px] font-mono mt-0.5">
               #{order.externalOrderId.slice(-8)}
@@ -235,6 +250,71 @@ export function OrderCard({
             <div className="flex justify-between gap-2">
               <span className="text-muted-foreground shrink-0">العنوان</span>
               <span className="text-left">{order.address}</span>
+            </div>
+          )}
+          {order.deliveryPeriod && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">مدة التسليم</span>
+              <span className="text-left">{order.deliveryPeriod}</span>
+            </div>
+          )}
+          {order.executorsDetail && order.executorsDetail.length > 0 && (
+            <div className="border-t border-border/40 pt-2 space-y-2">
+              <p className="font-semibold text-primary text-xs">
+                تفاصيل المنفذين ({order.executorsDetail.length}):
+              </p>
+              {order.executorsDetail.map((ex, i) => (
+                <div
+                  key={i}
+                  className="bg-background/60 border border-border/60 rounded-xl p-2.5 space-y-1.5 text-xs"
+                >
+                  <div className="flex justify-between items-center font-medium">
+                    <span className="text-foreground">
+                      #{i + 1} {ex.executorName || 'منفذة'}
+                    </span>
+                    {ex.deliveryPeriod && (
+                      <span className="text-muted-foreground text-[10px]">
+                        تسليم: {ex.deliveryPeriod}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-[10px] text-center bg-card/80 p-1.5 rounded-lg border border-border/40">
+                    <div>
+                      <span className="text-muted-foreground text-[9px] block">السعر</span>
+                      <span className="font-medium text-foreground">{formatCurrency(ex.price)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[9px] block">العربون</span>
+                      <span className="text-green-500 font-medium">{formatCurrency(ex.deposit)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[9px] block">المتبقي</span>
+                      <span className="text-amber-500 font-medium">
+                        {formatCurrency(ex.remaining)}
+                      </span>
+                    </div>
+                  </div>
+                  {ex.notes && (
+                    <p className="text-[11px] text-muted-foreground/90 bg-muted/30 p-1.5 rounded-md">
+                      {ex.notes}
+                    </p>
+                  )}
+                  {ex.images && ex.images.length > 0 && (
+                    <div className="flex gap-1 overflow-x-auto pt-1">
+                      {ex.images.map((img, imgIdx) => (
+                        <button
+                          key={imgIdx}
+                          type="button"
+                          onClick={() => onViewImage?.(img)}
+                          className="size-10 rounded-lg overflow-hidden border border-border/70 shrink-0 hover:border-primary transition-colors"
+                        >
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
           {order.moderatorCommission > 0 && (

@@ -26,12 +26,18 @@ export function ExecutorOrdersModal({
   if (!executor) return null
 
   const activeOrders = orders.filter(
-    (o) => o.executorId === executor.id && o.status === 'pending',
+    (o) =>
+      (o.executorId === executor.id || o.executorsDetail?.some((e) => e.executorId === executor.id)) &&
+      o.status === 'pending',
   )
-  const totalDebt = activeOrders.reduce(
-    (sum, o) => sum + (Number(o.executorPrice) - Number(o.executorDeposit)),
-    0,
-  )
+
+  const totalDebt = activeOrders.reduce((sum, o) => {
+    if (o.executorsDetail && o.executorsDetail.length > 0) {
+      const item = o.executorsDetail.find((e) => e.executorId === executor.id)
+      if (item) return sum + (Number(item.price) - Number(item.deposit))
+    }
+    return sum + (Number(o.executorPrice) - Number(o.executorDeposit))
+  }, 0)
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -67,56 +73,81 @@ export function ExecutorOrdersModal({
                 لا توجد أوردرات معلقة
               </p>
             ) : (
-              activeOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="bg-card border border-border rounded-xl p-3 text-xs space-y-2"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-foreground font-semibold flex items-center gap-2">
-                        {order.clientName}
-                        {onEditOrder && (
-                          <button
-                            type="button"
-                            onClick={() => onEditOrder(order)}
-                            className="text-primary hover:opacity-80"
-                          >
-                            <Edit3 className="size-3" />
-                          </button>
-                        )}
-                      </p>
-                      {order.clientPhone && (
-                        <p className="text-muted-foreground" dir="ltr">
-                          {order.clientPhone}
-                        </p>
-                      )}
-                    </div>
-                    {getStatusBadge(order.status)}
-                  </div>
+              activeOrders.map((order) => {
+                const exItem = order.executorsDetail?.find((e) => e.executorId === executor.id)
+                const exPrice = exItem ? exItem.price : order.executorPrice
+                const exDeposit = exItem ? exItem.deposit : order.executorDeposit
+                const exRemaining = exItem ? exItem.remaining : order.executorRemaining
 
-                  <div className="border-t border-border/60 pt-2 flex justify-between items-center text-center gap-2">
-                    <div className="flex-1">
-                      <p className="text-muted-foreground text-[10px]">المتبقي للمنفذ</p>
-                      <p className="text-red-400 font-medium" dir="ltr">
-                        {formatCurrency(order.executorRemaining)}
-                      </p>
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-card border border-border rounded-xl p-3 text-xs space-y-2"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-foreground font-semibold flex items-center gap-2">
+                          {order.clientName}
+                          {onEditOrder && (
+                            <button
+                              type="button"
+                              onClick={() => onEditOrder(order)}
+                              className="text-primary hover:opacity-80"
+                            >
+                              <Edit3 className="size-3" />
+                            </button>
+                          )}
+                        </p>
+                        {order.clientPhone && (
+                          <p className="text-muted-foreground" dir="ltr">
+                            {order.clientPhone}
+                          </p>
+                        )}
+                        {exItem?.notes && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">
+                            قطع هذا المنفذ: {exItem.notes}
+                          </p>
+                        )}
+                      </div>
+                      {getStatusBadge(order.status)}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-muted-foreground text-[10px]">العربون</p>
-                      <p className="text-green-400 font-medium" dir="ltr">
-                        {formatCurrency(order.executorDeposit)}
-                      </p>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-muted-foreground text-[10px]">سعر المنفذ</p>
-                      <p className="text-foreground font-medium" dir="ltr">
-                        {formatCurrency(order.executorPrice)}
-                      </p>
+
+                    {exItem?.images && exItem.images.length > 0 && (
+                      <div className="flex gap-1.5 overflow-x-auto py-1">
+                        {exItem.images.map((img, i) => (
+                          <img
+                            key={i}
+                            src={img}
+                            alt=""
+                            className="size-11 rounded-lg object-cover border border-border/60"
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="border-t border-border/60 pt-2 flex justify-between items-center text-center gap-2">
+                      <div className="flex-1">
+                        <p className="text-muted-foreground text-[10px]">المتبقي للمنفذ</p>
+                        <p className="text-red-400 font-medium" dir="ltr">
+                          {formatCurrency(exRemaining)}
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-muted-foreground text-[10px]">العربون</p>
+                        <p className="text-green-400 font-medium" dir="ltr">
+                          {formatCurrency(exDeposit)}
+                        </p>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-muted-foreground text-[10px]">سعر المنفذ</p>
+                        <p className="text-foreground font-medium" dir="ltr">
+                          {formatCurrency(exPrice)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

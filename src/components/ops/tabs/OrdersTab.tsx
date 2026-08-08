@@ -58,7 +58,8 @@ export function OrdersTab({
         o.clientName.toLowerCase().includes(q) ||
         o.clientPhone.includes(q) ||
         o.address.toLowerCase().includes(q) ||
-        (o.executor?.name || '').toLowerCase().includes(q),
+        (o.executor?.name || '').toLowerCase().includes(q) ||
+        (o.executorsDetail || []).some((e) => (e.executorName || '').toLowerCase().includes(q)),
     )
   }, [orders, statusFilter, searchQuery])
 

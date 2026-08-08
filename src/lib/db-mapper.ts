@@ -46,6 +46,17 @@ export function mapProduct(row: Record<string, unknown>): Product {
 export function mapOrder(row: Record<string, unknown>): Order {
   const executor = row.executor as Record<string, unknown> | null | undefined
   const product = row.product as Record<string, unknown> | null | undefined
+
+  let executorsDetail = null
+  if (row.customer_meta) {
+    try {
+      const meta = JSON.parse(String(row.customer_meta))
+      if (Array.isArray(meta.executors_detail)) {
+        executorsDetail = meta.executors_detail
+      }
+    } catch {}
+  }
+
   return {
     id: String(row.id),
     images: String(row.images ?? '[]'),
@@ -70,6 +81,7 @@ export function mapOrder(row: Record<string, unknown>): Order {
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
     executor: executor && executor.id ? mapExecutor(executor) : null,
+    executorsDetail,
     product: product && product.id ? mapProduct(product) : null,
     source: row.source != null ? String(row.source) : undefined,
     externalOrderId: row.external_order_id != null ? String(row.external_order_id) : null,

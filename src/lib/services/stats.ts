@@ -40,16 +40,33 @@ export async function computeStats(): Promise<Stats> {
     { executorId: string; executorName: string; totalRemaining: number }
   >()
   for (const order of pendingOrders) {
-    if (!order.executorId || !order.executor) continue
-    const existing = executorDebtMap.get(order.executorId)
-    if (existing) {
-      existing.totalRemaining += order.executorRemaining
-    } else {
-      executorDebtMap.set(order.executorId, {
-        executorId: order.executorId,
-        executorName: order.executor.name,
-        totalRemaining: order.executorRemaining,
-      })
+    if (order.executorsDetail && order.executorsDetail.length > 0) {
+      for (const item of order.executorsDetail) {
+        if (!item.executorId) continue
+        const name = item.executorName || executors.find((ex) => ex.id === item.executorId)?.name || 'منفذة'
+        const rem = (Number(item.price) || 0) - (Number(item.deposit) || 0)
+        const existing = executorDebtMap.get(item.executorId)
+        if (existing) {
+          existing.totalRemaining += rem
+        } else {
+          executorDebtMap.set(item.executorId, {
+            executorId: item.executorId,
+            executorName: name,
+            totalRemaining: rem,
+          })
+        }
+      }
+    } else if (order.executorId && order.executor) {
+      const existing = executorDebtMap.get(order.executorId)
+      if (existing) {
+        existing.totalRemaining += order.executorRemaining
+      } else {
+        executorDebtMap.set(order.executorId, {
+          executorId: order.executorId,
+          executorName: order.executor.name,
+          totalRemaining: order.executorRemaining,
+        })
+      }
     }
   }
   const executorDebts = Array.from(executorDebtMap.values()).filter((d) => d.totalRemaining > 0)

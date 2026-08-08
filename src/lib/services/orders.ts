@@ -1,7 +1,7 @@
 import { mapOrder } from '@/lib/db-mapper'
 import { logActivity } from '@/lib/services/activity'
 import { supabase } from '@/lib/supabase'
-import type { Order, OrderStatus } from '@/types/ops'
+import type { Order, OrderExecutorItem, OrderStatus } from '@/types/ops'
 
 const ORDER_SELECT = `
   *,
@@ -66,14 +66,24 @@ export type OrderMutationPayload = Partial<{
   isUrgent: boolean
   productId: string | null
   images: string
+  executorsDetail?: OrderExecutorItem[] | null
+  customerMeta?: string | null
+  notes?: string | null
 }>
 
 function calcOrderFields(payload: OrderMutationPayload) {
   const totalPrice = Number(payload.totalPrice) || 0
   const deposit = Number(payload.deposit) || 0
   const shippingCost = Number(payload.shippingCost) || 0
-  const executorPrice = Number(payload.executorPrice) || 0
-  const executorDeposit = Number(payload.executorDeposit) || 0
+  
+  let executorPrice = Number(payload.executorPrice) || 0
+  let executorDeposit = Number(payload.executorDeposit) || 0
+
+  if (payload.executorsDetail && payload.executorsDetail.length > 0) {
+    executorPrice = payload.executorsDetail.reduce((sum, e) => sum + (Number(e.price) || 0), 0)
+    executorDeposit = payload.executorsDetail.reduce((sum, e) => sum + (Number(e.deposit) || 0), 0)
+  }
+
   const moderatorCommission = Number(payload.moderatorCommission) || 0
   const isUrgent = Boolean(payload.isUrgent)
   const remaining = totalPrice - deposit
@@ -211,6 +221,15 @@ export async function createOrder(payload: OrderMutationPayload & Record<string,
   }
 
   const calc = calcOrderFields(payload)
+
+  let customerMetaObj: Record<string, unknown> = {}
+  if (payload.customerMeta) {
+    try { customerMetaObj = JSON.parse(payload.customerMeta) } catch {}
+  }
+  if (payload.executorsDetail && payload.executorsDetail.length > 0) {
+    customerMetaObj.executors_detail = payload.executorsDetail
+  }
+
   const { data, error } = await supabase
     .from('ops_orders')
     .insert({
@@ -225,6 +244,7 @@ export async function createOrder(payload: OrderMutationPayload & Record<string,
       product_id: productId,
       images: (payload.images as string) ?? '[]',
       notes: (payload.notes as string) ?? null,
+      customer_meta: Object.keys(customerMetaObj).length > 0 ? JSON.stringify(customerMetaObj) : null,
       ...calc,
     })
     .select(ORDER_SELECT)
@@ -245,7 +265,7 @@ export async function createOrder(payload: OrderMutationPayload & Record<string,
 export async function updateOrder(id: string, payload: OrderMutationPayload & Record<string, unknown>): Promise<Order> {
   const { data: existing } = await supabase
     .from('ops_orders')
-    .select('status, is_urgent, product_id, source, order_items')
+    .select('status, is_urgent, product_id, source, order_items, customer_meta')
     .eq('id', id)
     .single()
 
@@ -254,6 +274,22 @@ export async function updateOrder(id: string, payload: OrderMutationPayload & Re
   }
 
   const calc = calcOrderFields(payload)
+
+  let customerMetaObj: Record<string, unknown> = {}
+  if (existing?.customer_meta) {
+    try { customerMetaObj = JSON.parse(existing.customer_meta) } catch {}
+  } else if (payload.customerMeta) {
+    try { customerMetaObj = JSON.parse(payload.customerMeta) } catch {}
+  }
+
+  if (payload.executorsDetail !== undefined) {
+    if (payload.executorsDetail && payload.executorsDetail.length > 0) {
+      customerMetaObj.executors_detail = payload.executorsDetail
+    } else {
+      delete customerMetaObj.executors_detail
+    }
+  }
+
   const { data, error } = await supabase
     .from('ops_orders')
     .update({
@@ -267,6 +303,7 @@ export async function updateOrder(id: string, payload: OrderMutationPayload & Re
       ...(payload.productId !== undefined ? { product_id: payload.productId } : {}),
       ...(payload.images != null ? { images: payload.images as string } : {}),
       ...(payload.notes !== undefined ? { notes: payload.notes as string | null } : {}),
+      customer_meta: Object.keys(customerMetaObj).length > 0 ? JSON.stringify(customerMetaObj) : null,
       ...calc,
     })
     .eq('id', id)
