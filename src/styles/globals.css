@@ -5,7 +5,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Vazirmatn", "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Playpen Sans", "Vazirmatn", "Cairo", ui-sans-serif, system-ui, sans-serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);

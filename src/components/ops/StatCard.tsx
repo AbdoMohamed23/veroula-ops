@@ -14,7 +14,7 @@ export function StatCard({
   return (
     <div className="bg-card rounded-2xl border border-border p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-muted-foreground text-xs">{title}</span>
+        <span className="text-foreground/85 text-sm font-medium">{title}</span>
         <div className={`p-1.5 rounded-lg ${color}`}>
           <Icon className="size-4" />
         </div>
